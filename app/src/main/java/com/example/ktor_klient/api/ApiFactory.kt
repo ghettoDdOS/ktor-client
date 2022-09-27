@@ -15,8 +15,8 @@ object ApiFactory {
             json()
         }
         defaultRequest {
-            host = "10.0.2.2"
-            port = 8080
+            host = "localhost"
+            port = 8000
             url { protocol = URLProtocol.HTTP }
         }
     }
