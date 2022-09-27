@@ -1,18 +1,16 @@
 package com.example.ktor_klient
 
 import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.util.Log
-import android.view.View
-import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.RelativeLayout
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.setPadding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -21,9 +19,8 @@ import com.example.ktor_klient.api.ApiFactory
 import com.example.ktor_klient.api.resources.Faculties
 import com.example.ktor_klient.components.SwipeActionsCallback
 import com.example.ktor_klient.databinding.ActivityMainBinding
-import com.example.ktor_klient.databinding.FacultyEditBinding
-import com.example.ktor_klient.models.Chair
 import com.example.ktor_klient.models.Faculty
+import com.example.ktor_klient.models.FacultyRequest
 import com.google.android.material.snackbar.Snackbar
 import io.ktor.client.call.*
 import io.ktor.client.plugins.resources.*
@@ -38,7 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var b: ActivityMainBinding
     private val facultyItemsList: MutableList<Faculty> = mutableListOf()
     var recyclerView: RecyclerView? = null
-    var constraintLayout: ConstraintLayout? = null
+    var constraintLayout: RelativeLayout? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,17 +47,21 @@ class MainActivity : AppCompatActivity() {
         }
         setUpAdapter()
         enableSwipeToDeleteAndUndo()
+
+        b.floatingActionButton.setOnClickListener {
+            addFaculty()
+        }
     }
 
     private fun setUpAdapter() {
         recyclerView = findViewById(R.id.FacultiesList)
         constraintLayout = findViewById(R.id.constraintLayout)
-        mAdapter = FacultyItemViewAdapter(this,facultyItemsList)
+        mAdapter = FacultyItemViewAdapter(this, facultyItemsList)
         b.FacultiesList.adapter = mAdapter
         b.FacultiesList.layoutManager = LinearLayoutManager(this)
     }
 
-    private suspend fun  fetchFaculties() {
+    private suspend fun fetchFaculties() {
         val api = ApiFactory.getClient()
         kotlin.runCatching {
             api.get(Faculties()).body<List<Faculty>>()
@@ -78,44 +79,133 @@ class MainActivity : AppCompatActivity() {
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
                 val item = mAdapter.getData()[position]
-                if (direction == ItemTouchHelper.LEFT){
-                    mAdapter.removeItem(position)
-                    val restoreAction = Snackbar
-                        .make(
-                            constraintLayout!!,
-                            "Элемент удален.",
-                            Snackbar.LENGTH_LONG
-                        )
-                    restoreAction.setAction("ОТМЕНИТЬ") {
-                        mAdapter.restoreItem(item, position)
-                        recyclerView!!.scrollToPosition(position)
+
+                if (direction == ItemTouchHelper.LEFT) {
+                    mainScope.launch {
+                        kotlin.runCatching {
+                            mAdapter.removeItem(item.Id, position)
+                        }.onSuccess {
+                            val restoreAction = Snackbar
+                                .make(
+                                    constraintLayout!!,
+                                    "Элемент удален.",
+                                    Snackbar.LENGTH_LONG
+                                )
+                            restoreAction.setAction("ОТМЕНИТЬ") {
+                                mainScope.launch {
+                                    mAdapter.restoreItem(item, position)
+                                    recyclerView!!.scrollToPosition(position)
+                                }
+                            }
+                            restoreAction.setActionTextColor(Color.YELLOW)
+                            restoreAction.show()
+                        }
                     }
-                    restoreAction.setActionTextColor(Color.YELLOW)
-                    restoreAction.show()
-                } else if(direction == ItemTouchHelper.RIGHT) {
+                } else if (direction == ItemTouchHelper.RIGHT) {
                     val dialogBuilder = AlertDialog.Builder(this@MainActivity)
-                    val dialogBinding = FacultyEditBinding.inflate(layoutInflater)
+                    val dialogLayout = LinearLayout(
+                        this@MainActivity
+                    )
+                    val lp = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
 
-                    var nameInput = dialogBinding.root.findViewById<EditText>(R.id.name)
-                    var shortNameInput = dialogBinding.root.findViewById<EditText>(R.id.shortName)
+                    dialogLayout.layoutParams = lp
+                    dialogLayout.orientation = LinearLayout.VERTICAL
 
+                    val nameInput = EditText(dialogLayout.context)
+                    nameInput.layoutParams=lp
+                    nameInput.hint="Наименование"
+                    nameInput.setPadding(10)
+                    nameInput.height = 15
 
-                    dialogBuilder.setView(R.layout.faculty_edit)
-                    dialogBuilder.setTitle("Редактировать факультет")
+                    val shortNameInput = EditText(dialogLayout.context)
+                    shortNameInput.layoutParams=lp
+                    shortNameInput.hint="Аббревиатура"
+                    shortNameInput.setPadding(10)
+                    shortNameInput.height = 15
+
+                    dialogLayout.addView(nameInput)
+                    dialogLayout.addView(shortNameInput)
+
+                    dialogBuilder.setView(dialogLayout)
+
+                    nameInput.text = Editable.Factory.getInstance().newEditable(item.NameFaculty)
+                    shortNameInput.text =
+                        Editable.Factory.getInstance().newEditable(item.ShortNameFaculty)
+
+                    dialogBuilder.setTitle("Редактировать факультет: ${item.ShortNameFaculty}")
+
                     dialogBuilder.setPositiveButton("Сохранить") { dialog, _ ->
-                        Log.i("EDIT", "SAVE")
+                        mainScope.launch {
+                            mAdapter.editItem(
+                                Faculty(
+                                    Id = item.Id,
+                                    NameFaculty = nameInput.text.toString(),
+                                    ShortNameFaculty = shortNameInput.text.toString()
+                                ),
+                                position
+                            )
+                        }
                         dialog.cancel()
                     }
-                    dialogBuilder.setNegativeButton("Отменить") { dialog, _ -> dialog.cancel()}
-                    val b = dialogBuilder.create()
-                    b.show()
-
+                    dialogBuilder.setNegativeButton("Отменить") { dialog, _ -> dialog.cancel() }
+                    val dialog = dialogBuilder.create()
+                    dialog.show()
                 }
                 recyclerView?.adapter?.notifyItemChanged(position)
             }
+
         }
 
         val itemTouchHelper = ItemTouchHelper(swipeActionsCallback)
         itemTouchHelper.attachToRecyclerView(recyclerView)
+    }
+
+    fun addFaculty(){
+        val dialogBuilder = AlertDialog.Builder(this@MainActivity)
+        val dialogLayout = LinearLayout(
+            this@MainActivity
+        )
+        val lp = LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+
+        dialogLayout.layoutParams = lp
+        dialogLayout.orientation = LinearLayout.VERTICAL
+
+        val nameInput = EditText(dialogLayout.context)
+        nameInput.layoutParams=lp
+        nameInput.hint="Наименование"
+        nameInput.setPadding(10)
+
+        val shortNameInput = EditText(dialogLayout.context)
+        shortNameInput.layoutParams=lp
+        shortNameInput.hint="Аббревиатура"
+        shortNameInput.setPadding(10)
+
+        dialogLayout.addView(nameInput)
+        dialogLayout.addView(shortNameInput)
+
+        dialogBuilder.setView(dialogLayout)
+
+        dialogBuilder.setTitle("Добавить факультет")
+
+        dialogBuilder.setPositiveButton("Сохранить") { dialog, _ ->
+            mainScope.launch {
+                mAdapter.addItem(
+                    FacultyRequest(
+                        NameFaculty = nameInput.text.toString(),
+                        ShortNameFaculty = shortNameInput.text.toString()
+                    )
+                )
+            }
+            dialog.cancel()
+        }
+        dialogBuilder.setNegativeButton("Отменить") { dialog, _ -> dialog.cancel() }
+        val dialog = dialogBuilder.create()
+        dialog.show()
     }
 }

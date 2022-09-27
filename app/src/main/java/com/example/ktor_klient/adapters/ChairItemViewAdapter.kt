@@ -1,5 +1,6 @@
 package com.example.ktor_klient.adapters
 
+import android.content.ClipData.Item
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,6 +10,7 @@ import com.example.ktor_klient.api.resources.Chairs
 import com.example.ktor_klient.databinding.RecyclerItemLayoutBinding
 import com.example.ktor_klient.models.Chair
 import com.example.ktor_klient.models.ChairRequest
+import com.example.ktor_klient.models.Faculty
 import io.ktor.client.plugins.resources.*
 import io.ktor.client.request.*
 import io.ktor.client.utils.EmptyContent.contentType
@@ -32,8 +34,8 @@ class ChairItemViewAdapter(private val context: Context, private val itemList:Mu
 
     override fun getItemCount(): Int = itemList.size
 
-    suspend fun removeItem(position: Int) {
-        api.delete(Chairs.Id(id=position))
+    suspend fun removeItem(id: Int, position: Int) {
+        api.delete(Chairs.Id(id=id))
         itemList.removeAt(position)
         notifyItemRemoved(position)
     }
@@ -48,9 +50,9 @@ class ChairItemViewAdapter(private val context: Context, private val itemList:Mu
     }
 
     suspend fun editItem(item: Chair, position: Int){
-        api.patch(Chairs.Id(id=position)){
+        api.patch(Chairs.Id(id=item.Id)){
             contentType(ContentType.Application.Json)
-            setBody(ChairRequest(Faculty = item.Faculty.Id, NameChair = item.NameChair, ShortNameChair = item.ShortNameChair))
+            setBody(ChairRequest(Faculty = item.Faculty, NameChair = item.NameChair, ShortNameChair = item.ShortNameChair))
         }
         itemList[position].Faculty = item.Faculty
         itemList[position].NameChair = item.NameChair
@@ -58,12 +60,12 @@ class ChairItemViewAdapter(private val context: Context, private val itemList:Mu
         notifyItemChanged(position)
     }
 
-    suspend fun addItem(item: Chair){
+    suspend fun addItem(item: ChairRequest){
         api.post(Chairs()){
             contentType(ContentType.Application.Json)
             setBody(item)
         }
-        itemList.add(item)
+        itemList.add(Chair(Id=itemCount,Faculty = item.Faculty, NameChair = item.NameChair, ShortNameChair = item.ShortNameChair))
         notifyItemInserted(itemList.size)
     }
 

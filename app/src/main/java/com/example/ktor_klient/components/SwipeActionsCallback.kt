@@ -47,7 +47,7 @@ abstract class SwipeActionsCallback internal constructor(mContext: Context) :
         actionState: Int,
         isCurrentlyActive: Boolean
     ) {
-        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+        super.onChildDraw(c, recyclerView, viewHolder, dX/ 4, dY, actionState, isCurrentlyActive)
 
         val itemView = viewHolder.itemView
 
@@ -83,7 +83,7 @@ abstract class SwipeActionsCallback internal constructor(mContext: Context) :
             editDrawable!!.setBounds(iconLeft, iconTop, iconRight, iconBottom)
             editDrawable.draw(c)
         }
-        super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+        super.onChildDraw(c, recyclerView, viewHolder, dX / 4, dY, actionState, isCurrentlyActive)
 
     }
 
@@ -92,6 +92,6 @@ abstract class SwipeActionsCallback internal constructor(mContext: Context) :
     }
 
     override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float {
-        return 0.7f
+        return 0.5f
     }
 }
