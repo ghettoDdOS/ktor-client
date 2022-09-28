@@ -117,14 +117,12 @@ class MainActivity : AppCompatActivity() {
                     val nameInput = EditText(dialogLayout.context)
                     nameInput.layoutParams=lp
                     nameInput.hint="Наименование"
-                    nameInput.setPadding(10)
-                    nameInput.height = 15
+                    nameInput.setPadding(25)
 
                     val shortNameInput = EditText(dialogLayout.context)
                     shortNameInput.layoutParams=lp
                     shortNameInput.hint="Аббревиатура"
-                    shortNameInput.setPadding(10)
-                    shortNameInput.height = 15
+                    shortNameInput.setPadding(25)
 
                     dialogLayout.addView(nameInput)
                     dialogLayout.addView(shortNameInput)
@@ -179,12 +177,12 @@ class MainActivity : AppCompatActivity() {
         val nameInput = EditText(dialogLayout.context)
         nameInput.layoutParams=lp
         nameInput.hint="Наименование"
-        nameInput.setPadding(10)
+        nameInput.setPadding(25)
 
         val shortNameInput = EditText(dialogLayout.context)
         shortNameInput.layoutParams=lp
         shortNameInput.hint="Аббревиатура"
-        shortNameInput.setPadding(10)
+        shortNameInput.setPadding(25)
 
         dialogLayout.addView(nameInput)
         dialogLayout.addView(shortNameInput)

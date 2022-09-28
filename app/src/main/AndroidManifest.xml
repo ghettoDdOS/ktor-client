@@ -33,6 +33,10 @@
             android:name=".ChairActivity"
             android:label="Кафедры">
         </activity>
+        <activity
+            android:name=".TeacherActivity"
+            android:label="Преподаватели">
+        </activity>
     </application>
 
 </manifest>

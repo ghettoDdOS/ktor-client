@@ -2,9 +2,12 @@ package com.example.ktor_klient.adapters
 
 import android.content.ClipData.Item
 import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
+import com.example.ktor_klient.ChairActivity
+import com.example.ktor_klient.TeacherActivity
 import com.example.ktor_klient.api.ApiFactory
 import com.example.ktor_klient.api.resources.Chairs
 import com.example.ktor_klient.databinding.RecyclerItemLayoutBinding
@@ -29,7 +32,7 @@ class ChairItemViewAdapter(private val context: Context, private val itemList:Mu
 
     override fun onBindViewHolder(holder: ChairItemViewHolder, position: Int) {
         val item = itemList[position]
-        holder.bind(item)
+        holder.bind(item, context)
     }
 
     override fun getItemCount(): Int = itemList.size
@@ -76,8 +79,15 @@ class ChairItemViewAdapter(private val context: Context, private val itemList:Mu
 
         private val binding = itemLayoutBinding
 
-        fun bind(item: Chair) {
+        fun bind(item: Chair, context: Context) {
             binding.label.text = item.NameChair
+            itemView.setOnClickListener {
+                if (item.Id != null) {
+                    val intent = Intent(context, TeacherActivity::class.java)
+                    intent.putExtra("chair", item.Id)
+                    context.startActivity(intent)
+                }
+            }
         }
     }
 }
