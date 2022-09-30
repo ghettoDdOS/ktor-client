@@ -18,7 +18,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="Факультеты">
+            android:label="Главная страница">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -30,12 +30,20 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".ChairActivity"
-            android:label="Кафедры">
+            android:name=".ChoiceActivity"
+            android:label="Результаты голосования">
         </activity>
         <activity
-            android:name=".TeacherActivity"
-            android:label="Преподаватели">
+            android:name=".UserActivity"
+            android:label="Пользователи">
+        </activity>
+        <activity
+            android:name=".QuestionActivity"
+            android:label="Вопросы голосования">
+        </activity>
+        <activity
+            android:name=".VoteActivity"
+            android:label="Голосования">
         </activity>
     </application>
 

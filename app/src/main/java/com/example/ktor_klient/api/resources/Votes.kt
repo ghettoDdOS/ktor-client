@@ -1,12 +1,12 @@
 package com.example.ktor_klient.api.resources
-
 import io.ktor.resources.*
 import kotlinx.serialization.*
 
 @Serializable
-@Resource("/faculty")
-class Faculties() {
+@Resource("/vote")
+class Votes() {
     @Serializable
     @Resource("{id}")
-    class Id(val parent: Faculties = Faculties(), val id: Int)
+    class Id(val parent: Votes = Votes(), val id: Int)
+
 }

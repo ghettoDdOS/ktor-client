@@ -5,16 +5,16 @@ import kotlinx.serialization.*
 
 @Serializable
 @Resource("/chair")
-class Chairs() {
+class Questions() {
     @Serializable
     @Resource("{id}")
-    class Id(val parent: Chairs = Chairs(), val id: Int)
+    class Id(val parent: Questions = Questions(), val id: Int)
     @Serializable
-    @Resource("faculty")
-    class Faculty(val parent: Chairs = Chairs()){
+    @Resource("vote")
+    class Vote(val parent: Questions = Questions()){
         @Serializable
         @Resource("{id}")
-        class Id(val parent: Faculty = Faculty(), val id: Int)
+        class Id(val parent: Vote = Vote(), val id: Int)
     }
 
 }

@@ -3,10 +3,10 @@ import io.ktor.resources.*
 import kotlinx.serialization.*
 
 @Serializable
-@Resource("/post")
-class Posts() {
+@Resource("/user")
+class Users() {
     @Serializable
     @Resource("{id}")
-    class Id(val parent: Posts = Posts(), val id: Int)
+    class Id(val parent: Users = Users(), val id: Int)
 
 }

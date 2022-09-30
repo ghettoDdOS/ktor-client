@@ -5,11 +5,11 @@
     android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".ChairActivity"
+    tools:context=".VoteActivity"
     >
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/ChairsList"
+        android:id="@+id/VotesList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_constraintStart_toStartOf="parent"

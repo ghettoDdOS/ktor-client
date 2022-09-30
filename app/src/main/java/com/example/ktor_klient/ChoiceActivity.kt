@@ -5,6 +5,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.text.Editable
 import android.util.Log
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RelativeLayout
@@ -14,13 +15,12 @@ import androidx.core.view.setPadding
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.ktor_klient.adapters.ChairItemViewAdapter
+import com.example.ktor_klient.adapters.ChoiceItemViewAdapter
 import com.example.ktor_klient.api.ApiFactory
-import com.example.ktor_klient.api.resources.Chairs
+import com.example.ktor_klient.api.resources.Choices
 import com.example.ktor_klient.components.SwipeActionsCallback
-import com.example.ktor_klient.databinding.ChairListBinding
-import com.example.ktor_klient.models.Chair
-import com.example.ktor_klient.models.ChairRequest
+import com.example.ktor_klient.databinding.ChoiceListBinding
+import com.example.ktor_klient.models.*
 import com.google.android.material.snackbar.Snackbar
 import io.ktor.client.call.*
 import io.ktor.client.plugins.resources.*
@@ -28,55 +28,60 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 
 
-class ChairActivity : AppCompatActivity() {
+class ChoiceActivity : AppCompatActivity() {
     private val mainScope = MainScope()
 
-    private lateinit var mAdapter: ChairItemViewAdapter
-    private lateinit var b: ChairListBinding
-    private val chairItemsList: MutableList<Chair> = mutableListOf()
+    private lateinit var mAdapter: ChoiceItemViewAdapter
+    private lateinit var b: ChoiceListBinding
+    private val choiceItemsList: MutableList<Choice> = mutableListOf()
     var recyclerView: RecyclerView? = null
     var constraintLayout: RelativeLayout? = null
-    var facultyId: Int = -1
+    var questionId: Int = -1
+    var userId: Int = -1
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        b = ChairListBinding.inflate(layoutInflater)
+        b = ChoiceListBinding.inflate(layoutInflater)
         setContentView(b.root)
         val props = intent.extras
-        if (props != null) facultyId = props.getInt("faculty")
+        if (props != null) {
+            questionId = props.getInt("question")
+            userId = props.getInt("user")
+        }
+
 
         mainScope.launch {
-            fetchChairs()
+            fetchChoices()
         }
         setUpAdapter()
         enableSwipeToDeleteAndUndo()
 
         b.floatingActionButton.setOnClickListener {
-            addChair()
+            addChoice()
         }
     }
 
     private fun setUpAdapter() {
-        recyclerView = findViewById(R.id.ChairsList)
+        recyclerView = findViewById(R.id.ChoicesList)
         constraintLayout = findViewById(R.id.constraintLayout)
-        mAdapter = ChairItemViewAdapter(this, chairItemsList)
-        b.ChairsList.adapter = mAdapter
-        b.ChairsList.layoutManager = LinearLayoutManager(this)
+        mAdapter = ChoiceItemViewAdapter(this, choiceItemsList)
+        b.ChoicesList.adapter = mAdapter
+        b.ChoicesList.layoutManager = LinearLayoutManager(this)
     }
 
-    private suspend fun fetchChairs() {
-        if (facultyId > -1) {
+    private suspend fun fetchChoices() {
+        if (questionId > -1 && userId > -1) {
             val api = ApiFactory.getClient()
             kotlin.runCatching {
-                api.get(Chairs.Faculty.Id(id = facultyId)).body<List<Chair>>()
+                api.get(Choices.QuestionUser.Params(quesId=questionId, usrId=userId)).body<List<Choice>>()
             }.onSuccess {
-                chairItemsList.addAll(it)
+                choiceItemsList.addAll(it)
                 mAdapter.notifyDataSetChanged()
             }.onFailure {
                 Log.e("REQUEST", it.toString())
                 Toast.makeText(this, "Ошибка сервера!", Toast.LENGTH_LONG).show()
             }
-
         }
     }
 
@@ -107,10 +112,11 @@ class ChairActivity : AppCompatActivity() {
                             restoreAction.show()
                         }
                     }
-                } else if (direction == ItemTouchHelper.RIGHT) {
-                    val dialogBuilder = AlertDialog.Builder(this@ChairActivity)
+                }
+                else if (direction == ItemTouchHelper.RIGHT) {
+                    val dialogBuilder = AlertDialog.Builder(this@ChoiceActivity)
                     val dialogLayout = LinearLayout(
-                        this@ChairActivity
+                        this@ChoiceActivity
                     )
                     val lp = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -120,35 +126,41 @@ class ChairActivity : AppCompatActivity() {
                     dialogLayout.layoutParams = lp
                     dialogLayout.orientation = LinearLayout.VERTICAL
 
-                    val nameInput = EditText(dialogLayout.context)
-                    nameInput.layoutParams = lp
-                    nameInput.hint = "Наименование"
-                    nameInput.setPadding(25)
+                    val QuestionInput = EditText(dialogLayout.context)
+                    QuestionInput.layoutParams=lp
+                    QuestionInput.hint="Вопросы голосования"
+                    QuestionInput.setPadding(25)
 
-                    val shortNameInput = EditText(dialogLayout.context)
-                    shortNameInput.layoutParams = lp
-                    shortNameInput.hint = "Аббревиатура"
-                    shortNameInput.setPadding(25)
+                    val UserInput = EditText(dialogLayout.context)
+                    UserInput.layoutParams=lp
+                    UserInput.hint="Пользователь"
+                    UserInput.setPadding(25)
 
-                    dialogLayout.addView(nameInput)
-                    dialogLayout.addView(shortNameInput)
+                    val ChoiceUserInput = EditText(dialogLayout.context)
+                    ChoiceUserInput.layoutParams=lp
+                    ChoiceUserInput.hint="Выбор голосующего"
+                    ChoiceUserInput.setPadding(25)
+
+                    dialogLayout.addView(QuestionInput)
+                    dialogLayout.addView(UserInput)
+                    dialogLayout.addView(ChoiceUserInput)
 
                     dialogBuilder.setView(dialogLayout)
 
-                    nameInput.text = Editable.Factory.getInstance().newEditable(item.NameChair)
-                    shortNameInput.text =
-                        Editable.Factory.getInstance().newEditable(item.ShortNameChair)
+                    QuestionInput.text = Editable.Factory.getInstance().newEditable(item.Question.toString())
+                    UserInput.text = Editable.Factory.getInstance().newEditable(item.User.toString())
+                    ChoiceUserInput.text = Editable.Factory.getInstance().newEditable(item.ChoiceUser)
 
-                    dialogBuilder.setTitle("Редактировать кафедру: ${item.ShortNameChair}")
+                    dialogBuilder.setTitle("Редактировать выбор пользователя: ${item.User}")
 
                     dialogBuilder.setPositiveButton("Сохранить") { dialog, _ ->
                         mainScope.launch {
                             mAdapter.editItem(
-                                Chair(
+                                Choice(
                                     Id = item.Id,
-                                    Faculty = facultyId,
-                                    NameChair = nameInput.text.toString(),
-                                    ShortNameChair = shortNameInput.text.toString()
+                                    Question = questionId,
+                                    User = userId,
+                                    ChoiceUser = ChoiceUserInput.text.toString(),
                                 ),
                                 position
                             )
@@ -168,10 +180,10 @@ class ChairActivity : AppCompatActivity() {
         itemTouchHelper.attachToRecyclerView(recyclerView)
     }
 
-    private fun addChair() {
-        val dialogBuilder = AlertDialog.Builder(this@ChairActivity)
+    private fun addChoice(){
+        val dialogBuilder = AlertDialog.Builder(this@ChoiceActivity)
         val dialogLayout = LinearLayout(
-            this@ChairActivity
+            this@ChoiceActivity
         )
         val lp = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -181,30 +193,36 @@ class ChairActivity : AppCompatActivity() {
         dialogLayout.layoutParams = lp
         dialogLayout.orientation = LinearLayout.VERTICAL
 
-        val nameInput = EditText(dialogLayout.context)
-        nameInput.layoutParams = lp
-        nameInput.hint = "Наименование"
-        nameInput.setPadding(25)
+        val QuestionInput = EditText(dialogLayout.context)
+        QuestionInput.layoutParams=lp
+        QuestionInput.hint="Вопросы голосования"
+        QuestionInput.setPadding(25)
 
-        val shortNameInput = EditText(dialogLayout.context)
-        shortNameInput.layoutParams = lp
-        shortNameInput.hint = "Аббревиатура"
-        shortNameInput.setPadding(25)
+        val UserInput = EditText(dialogLayout.context)
+        UserInput.layoutParams=lp
+        UserInput.hint="Пользователь"
+        UserInput.setPadding(25)
 
-        dialogLayout.addView(nameInput)
-        dialogLayout.addView(shortNameInput)
+        val ChoiceUserInput = EditText(dialogLayout.context)
+        ChoiceUserInput.layoutParams=lp
+        ChoiceUserInput.hint="Выбор голосующего"
+        ChoiceUserInput.setPadding(25)
+
+        dialogLayout.addView(QuestionInput)
+        dialogLayout.addView(UserInput)
+        dialogLayout.addView(ChoiceUserInput)
 
         dialogBuilder.setView(dialogLayout)
 
-        dialogBuilder.setTitle("Добавить кафедру")
+        dialogBuilder.setTitle("Добавить пользователя")
 
         dialogBuilder.setPositiveButton("Сохранить") { dialog, _ ->
             mainScope.launch {
                 mAdapter.addItem(
-                    ChairRequest(
-                        Faculty = facultyId,
-                        NameChair = nameInput.text.toString(),
-                        ShortNameChair = shortNameInput.text.toString()
+                    ChoiceRequest(
+                        Question = questionId,
+                        User = userId,
+                        ChoiceUser = ChoiceUserInput.text.toString(),
                     )
                 )
             }
